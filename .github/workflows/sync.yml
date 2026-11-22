@@ -47,7 +47,6 @@ jobs:
       CARGO_INCREMENTAL: 0
       RUST_BACKTRACE: short
       HUSKY: 0
-      CUSTOM_MIHOMO_TAG: ${{ needs.plan.outputs.core }}
       VERSION_TAG: ${{ needs.plan.outputs.tag }}
     steps:
       - uses: actions/checkout@v7

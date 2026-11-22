@@ -1,0 +1,11 @@
+name: test
+description: Steps from the corresponding upstream release
+runs:
+  using: composite
+  steps:
+  - name: Run TypeScript typecheck
+    run: pnpm typecheck
+    shell: pwsh
+  - name: Run tests
+    run: pnpm test
+    shell: pwsh

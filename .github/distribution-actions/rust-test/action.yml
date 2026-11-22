@@ -1,0 +1,10 @@
+name: rust-test
+description: Steps from the corresponding upstream release
+runs:
+  using: composite
+  steps:
+  - name: Run Windows security tests
+    if: matrix.os == 'windows-latest'
+    working-directory: ./src-tauri
+    run: cargo test --all-features --target ${{ matrix.target }}
+    shell: pwsh

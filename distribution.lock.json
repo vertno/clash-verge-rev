@@ -1,0 +1,11 @@
+{
+  "core": {
+    "commit": "a0fc55409ce718a4eaf6063a7116c55616e6076a",
+    "upstream_commit": "0455d0d28c4526937380505153e65a843d8612e8",
+    "version": "v1.19.34-patched"
+  },
+  "upstream": "clash-verge-rev/clash-verge-rev",
+  "upstream_commit": "c83f7ad529c7c9cb3d2d54a0955ef8c1b22a411b",
+  "upstream_tag": "v2.5.10",
+  "version": "v2.5.10-patched"
+}

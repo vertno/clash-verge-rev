@@ -1,0 +1,12 @@
+name: build
+description: Steps from the corresponding upstream release
+runs:
+  using: composite
+  steps:
+  - name: Tauri build
+    uses: tauri-apps/tauri-action@v1.0.0
+    env:
+      NODE_OPTIONS: --max_old_space_size=4096
+    with:
+      tauriScript: pnpm
+      args: --target ${{ matrix.target }}

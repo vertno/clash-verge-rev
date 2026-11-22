@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: vertno/mihomo
-          ref: 9b61d9d4087649f505566c7e142177eb61bd742f # release tools
+          ref: 1a89312b05a4b21b063c9d321117f2341e4a8f4f # release tools
           path: tools
           persist-credentials: false
       - id: select
@@ -113,7 +113,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: vertno/mihomo
-          ref: 9b61d9d4087649f505566c7e142177eb61bd742f # release tools
+          ref: 1a89312b05a4b21b063c9d321117f2341e4a8f4f # release tools
           path: tools
           persist-credentials: false
       - uses: actions/download-artifact@v4

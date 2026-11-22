@@ -1,5 +1,5 @@
-# Clash Verge Rev — personal stable builds
+# Clash Verge Rev Stable Builds
 
-Personal distribution based on [clash-verge-rev/clash-verge-rev](https://github.com/clash-verge-rev/clash-verge-rev). [Download a signed application or a stable core from Releases](https://github.com/vertno/clash-verge-rev/releases). The release tag points at the complete patched source. The `distribution` branch contains the downstream patch and release controls.
+Download the x64 or ARM64 installer from the [latest Windows release](https://github.com/vertno/clash-verge-rev/releases/latest). The original desktop update control checks this repository. The original core update control checks the [personal Mihomo releases](https://github.com/vertno/mihomo/releases/latest).
 
-The Windows installer bundles the stable core from [vertno/mihomo](https://github.com/vertno/mihomo/releases). The original core and application update controls follow the respective personal repositories.
+The installer bundles the verified stable core. Updates use the personal Tauri signing key. The release tag contains the patched source and its dependency record. The `distribution` branch holds the patch and release workflow. [Official Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev)

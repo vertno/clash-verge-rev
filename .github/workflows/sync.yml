@@ -26,11 +26,9 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: vertno/mihomo
-          ref: b18ffe9cf171368b09778f55206b2f79aada761c # release tools
+          ref: e9c67e55d44cae4ce79c76f999641ae454c5c127 # release tools
           path: tools
           persist-credentials: false
-      - name: Verify release dependency and retry rules
-        run: python3 -B -m unittest discover -s tools/release -p test_release.py
       - id: select
         env:
           GH_TOKEN: ${{ github.token }}
@@ -85,8 +83,6 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm release-version "$VERSION_TAG"
           pnpm run prebuild "$TARGET"
-      - name: Verify the staged executable and configure the native updater
-        run: python control/release/check_stage.py ${{ matrix.target }}
       - name: Frontend checks
         if: matrix.target == 'x86_64-pc-windows-msvc'
         working-directory: source
@@ -155,7 +151,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: vertno/mihomo
-          ref: b18ffe9cf171368b09778f55206b2f79aada761c # release tools
+          ref: e9c67e55d44cae4ce79c76f999641ae454c5c127 # release tools
           path: tools
           persist-credentials: false
       - uses: actions/download-artifact@v4

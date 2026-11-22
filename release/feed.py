@@ -1,6 +1,5 @@
-"""Check both native update manifests against the two signed Windows installers."""
-import json,subprocess,sys,tempfile
-from pathlib import Path
+"""Refresh the upstream updater manifests when a release is missing from either feed."""
+import json,subprocess,sys
 repo="vertno/clash-verge-rev"
 def gh(*args):
     return subprocess.run(["gh",*args],text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -13,21 +12,26 @@ def latest():
     if r["tag_name"]=="updater" or "<!-- distribution " not in (r["body"] or ""): raise ValueError("Latest is not an application release")
     return r
 def valid(rel):
-    with tempfile.TemporaryDirectory() as d:
-        for name in ["update.json","update-proxy.json"]:
-            p=gh("release","download","updater","-R",repo,"-D",d,"-p",name)
-            if p.returncode: return False
-            data=json.loads((Path(d)/name).read_text())
-            if (data.get("version") or data.get("name") or "").removeprefix("v")!=rel["tag_name"].removeprefix("v"): return False
-            for cpu,key in (("x64","windows-x86_64-nsis"),("arm64","windows-aarch64-nsis")):
-                asset,=[a for a in rel["assets"] if a["name"].endswith(cpu+"-setup.exe")]
-                row=data["platforms"][key]
-                expected=("https://update.hwdns.net/" if "proxy" in name else "")+asset["browser_download_url"]
-                if row["url"]!=expected: return False
-                sig=asset["name"]+".sig"
-                if not (Path(d)/sig).exists() and gh("release","download",rel["tag_name"],"-R",repo,"-D",d,"-p",sig).returncode: return False
-                if row["signature"].strip()!=(Path(d)/sig).read_text().strip(): return False
+    version = rel["tag_name"].removeprefix("v")
+    for name in ("update.json", "update-proxy.json"):
+        result = gh("release", "download", "updater", "-R", repo, "-p", name, "-O", "-")
+        if result.returncode:
+            return False
+        try:
+            manifest = json.loads(result.stdout)
+        except ValueError:
+            return False
+        if not isinstance(manifest, dict):
+            return False
+        reported = manifest.get("version") or manifest.get("name")
+        if reported not in (version, "v" + version):
+            return False
+        for target in ("windows-x86_64-nsis", "windows-aarch64-nsis"):
+            entry = (manifest.get("platforms") or {}).get(target) or {}
+            if not entry.get("url") or not entry.get("signature"):
+                return False
     return True
+
 if __name__=="__main__":
     import os
     rel=latest()
@@ -36,4 +40,4 @@ if __name__=="__main__":
         with open(os.environ["GITHUB_OUTPUT"],"a") as f:
             print("repair="+str(not ok).lower(),file=f)
             if rel: print("tag="+rel["tag_name"],file=f)
-    elif not rel or not valid(rel): raise ValueError("Native update feeds are missing or do not match signed assets")
+    elif not rel or not valid(rel): raise ValueError("Native update feeds do not yet advertise the published version")

@@ -1,5 +1,5 @@
 diff --git a/scripts/prebuild.mjs b/scripts/prebuild.mjs
-index 22dd960..553a8c4 100644
+index 22dd960..d431013 100644
 --- a/scripts/prebuild.mjs
 +++ b/scripts/prebuild.mjs
 @@ -10,6 +10,7 @@ import { glob } from 'glob'
@@ -29,6 +29,15 @@ index 22dd960..553a8c4 100644
  let META_VERSION
  
  const META_ALPHA_MAP = {
+@@ -466,7 +465,7 @@ async function resolveResource(binInfo) {
+ // Windows NSIS plugin
+ const resolvePlugin = async () => {
+   const url =
+-    'https://nsis.sourceforge.io/mediawiki/images/e/ef/NSIS_Simple_Service_Plugin_Unicode_1.30.zip'
++    'https://github.com/Speed7811/nsis-simple-service-plugin/releases/download/1.30/NSIS_Simple_Service_Plugin_1.30_Unicode.zip'
+   const tempDir = path.join(TEMP_DIR, 'SimpleSC')
+   const tempZip = path.join(
+     tempDir,
 diff --git a/src-tauri/src/feat/core_upgrade.rs b/src-tauri/src/feat/core_upgrade.rs
 index dfb415a..0a7e5be 100644
 --- a/src-tauri/src/feat/core_upgrade.rs
@@ -79,6 +88,26 @@ index dfb415a..0a7e5be 100644
 +        assert!(alpha.contains("/releases/download/v1.19.30/"), "{alpha}");
      }
  }
+diff --git a/src-tauri/tauri.conf.json b/src-tauri/tauri.conf.json
+index 68be249..f0df7e0 100755
+--- a/src-tauri/tauri.conf.json
++++ b/src-tauri/tauri.conf.json
+@@ -31,11 +31,11 @@
+   "identifier": "io.github.clash-verge-rev.clash-verge-rev",
+   "plugins": {
+     "updater": {
+-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQyOEMyRjBCQkVGOUJEREYKUldUZnZmbStDeStNMHU5Mmo1N24xQXZwSVRYbXA2NUpzZE5oVzlqeS9Bc0t6RVV4MmtwVjBZaHgK",
++      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZGMUIyN0MzQkVCMzY4M0YKUldRL2FMTyt3eWNiYjRsSUtHaisxNDF1QzZSU1puenpNVWhaNU1HVGh0VnJtZ3pCRWtQMnBmRkkK",
+       "endpoints": [
+-        "https://update.hwdns.net/https://github.com/clash-verge-rev/clash-verge-rev/releases/download/updater/update-proxy.json",
+-        "https://gh-proxy.org/https://github.com/clash-verge-rev/clash-verge-rev/releases/download/updater/update-proxy.json",
+-        "https://github.com/clash-verge-rev/clash-verge-rev/releases/download/updater/update.json"
++        "https://update.hwdns.net/https://github.com/vertno/clash-verge-rev/releases/download/updater/update-proxy.json",
++        "https://gh-proxy.org/https://github.com/vertno/clash-verge-rev/releases/download/updater/update-proxy.json",
++        "https://github.com/vertno/clash-verge-rev/releases/download/updater/update.json"
+       ],
+       "windows": {
+         "installMode": "passive"
 diff --git a/src/components/setting/mods/update-viewer.tsx b/src/components/setting/mods/update-viewer.tsx
 index e29c5ba..f32fc7c 100644
 --- a/src/components/setting/mods/update-viewer.tsx

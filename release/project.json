@@ -2,6 +2,5 @@
   "project": "verge",
   "repository": "vertno/clash-verge-rev",
   "upstream": "clash-verge-rev/clash-verge-rev",
-  "first_tag": "v2.5.10",
-  "revision": 3
+  "first_tag": "v2.5.10"
 }

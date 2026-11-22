@@ -112,3 +112,12 @@ index e29c5ba..f32fc7c 100644
                )
              }}
            >
+diff --git a/scripts/release-version.mjs b/scripts/release-version.mjs
+index 1b9f374..85bc1d3 100644
+--- a/scripts/release-version.mjs
++++ b/scripts/release-version.mjs
+@@ -84,3 +84,3 @@ function generateShortTimestamp(withCommit = false, useTauriCommit = false) {
+ function isValidVersion(version) {
+-  return /^v?\d+\.\d+\.\d+(-(alpha|beta|rc)(\.\d+)?)?(\+[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*)?$/i.test(
++  return /^v?\d+\.\d+\.\d+(-patched|-(alpha|beta|rc)(\.\d+)?)?(\+[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*)?$/i.test(
+     version,

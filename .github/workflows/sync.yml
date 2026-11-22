@@ -1,0 +1,222 @@
+name: Stable release
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '31 */6 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: stable-release
+  cancel-in-progress: false
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.select.outputs.tag }}
+      source: ${{ steps.select.outputs.source }}
+      core: ${{ steps.select.outputs.core }}
+      waiting: ${{ steps.select.outputs.waiting }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: distribution
+          path: control
+      - uses: actions/checkout@v6
+        with:
+          repository: vertno/mihomo
+          ref: bed05b83259fa4e683cbf16ff62ff02248f5319e # release tools
+          path: tools
+          persist-credentials: false
+      - name: Verify release dependency and retry rules
+        run: python3 -B -m unittest discover -s tools/release -p test_release.py
+      - id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/release/sync.py
+  build:
+    needs: plan
+    if: needs.plan.outputs.tag != ''
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-pc-windows-msvc, aarch64-pc-windows-msvc]
+    env:
+      CARGO_INCREMENTAL: 0
+      RUST_BACKTRACE: short
+      HUSKY: 0
+      CUSTOM_MIHOMO_TAG: ${{ needs.plan.outputs.core }}
+      VERSION_TAG: ${{ needs.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: distribution
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.source }}
+          path: source
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.99.1'
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: source -> target
+          key: release-${{ matrix.target }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26.13.0'
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: source/package.json
+          run_install: false
+      - name: Prepare the installer with the pinned stable core
+        working-directory: source
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm release-version "$VERSION_TAG"
+          pnpm run prebuild "$TARGET"
+      - name: Verify the staged executable and configure the native updater
+        run: python control/release/check_stage.py ${{ matrix.target }}
+      - name: Frontend checks
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        working-directory: source
+        shell: bash
+        run: |
+          pnpm typecheck
+          pnpm test
+      - name: Build and sign with the upstream Tauri action
+        uses: tauri-apps/tauri-action@v1.0.0
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        with:
+          projectPath: source
+          tauriScript: pnpm
+          args: --target ${{ matrix.target }}
+      - name: Upstream Rust tests for the native core updater
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        working-directory: source
+        run: cargo test --release --locked --target ${{ matrix.target }} -p clash-verge --lib core_upgrade::tests
+      - name: Stage the signed installer
+        shell: pwsh
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          $dir = Join-Path 'source/target' "$env:TARGET/release/bundle/nsis"
+          $exe = @(Get-ChildItem -LiteralPath $dir -File -Filter '*-setup.exe')
+          if ($exe.Count -ne 1) { throw 'Expected exactly one NSIS installer' }
+          $sig = Get-Item -LiteralPath ($exe[0].FullName + '.sig') -ErrorAction Stop
+          if ($sig.Length -eq 0) { throw 'Empty Tauri signature' }
+          $null = New-Item -ItemType Directory -Path 'signed'
+          foreach ($file in @($exe[0],$sig)) { Copy-Item -LiteralPath $file.FullName -Destination (Join-Path 'signed' ($file.Name.Replace(' ','.'))) }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.target }}
+          path: signed/*
+          if-no-files-found: error
+  publish:
+    needs: [plan, build]
+    if: needs.plan.outputs.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: distribution
+          path: control
+      - uses: actions/checkout@v6
+        with:
+          repository: vertno/mihomo
+          ref: bed05b83259fa4e683cbf16ff62ff02248f5319e # release tools
+          path: tools
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Verify and publish the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+          SOURCE_SHA: ${{ needs.plan.outputs.source }}
+        run: |
+          python3 tools/release/publish.py
+  update-feed:
+    needs: [plan, publish]
+    if: always() && needs.plan.result == 'success' && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: control
+          ref: distribution
+      - id: feed
+        run: python3 control/release/feed.py check
+      - uses: actions/checkout@v7
+        if: steps.feed.outputs.repair == 'true'
+        with:
+          ref: ${{ steps.feed.outputs.tag }}
+          path: source
+      - uses: actions/setup-node@v7
+        if: steps.feed.outputs.repair == 'true'
+        with:
+          node-version: '26.13.0'
+      - uses: pnpm/action-setup@v6
+        if: steps.feed.outputs.repair == 'true'
+        with:
+          package_json_file: source/package.json
+          run_install: false
+      - name: Refresh the original updater and mirror manifests
+        if: steps.feed.outputs.repair == 'true'
+        working-directory: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view updater -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create updater -R "$GITHUB_REPOSITORY" --target distribution --latest=false --title 'Auto-update Stable Channel' --notes 'Native stable updater manifests.'
+          fi
+          pnpm install --frozen-lockfile
+          pnpm updater
+          python3 ../control/release/feed.py verify
+  wake:
+    needs: [plan, publish]
+    if: always() && needs.plan.result == 'success' && needs.plan.outputs.waiting == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report pending app installation
+        if: vars.WAKE_APP_CLIENT_ID == ''
+        run: echo '::warning::Cross-repository wake requires the release app. Scheduled reconciliation remains enabled.'
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3
+        id: app
+        if: vars.WAKE_APP_CLIENT_ID != ''
+        with:
+          client-id: ${{ vars.WAKE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.WAKE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: mihomo
+          permission-actions: write
+      - name: Wake dependent release checks
+        if: steps.app.outputs.token != ''
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          status=0
+          for repo in mihomo; do
+            gh workflow run sync.yml -R "vertno/$repo" --ref distribution || status=1
+          done
+          exit "$status"

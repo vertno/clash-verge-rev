@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: vertno/mihomo
-          ref: bed05b83259fa4e683cbf16ff62ff02248f5319e # release tools
+          ref: f0e5124e45bc5fcbbca4c1823854f0385d2b76fc # release tools
           path: tools
           persist-credentials: false
       - name: Verify release dependency and retry rules
@@ -60,17 +60,19 @@ jobs:
           ref: ${{ needs.plan.outputs.source }}
           path: source
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: '1.99.1'
-          targets: ${{ matrix.target }}
+      - name: Install the target for the upstream rust-toolchain.toml
+        working-directory: source
+        env:
+          RUST_TARGET: ${{ matrix.target }}
+        shell: bash
+        run: rustup target add "$RUST_TARGET"
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: source -> target
           key: release-${{ matrix.target }}
       - uses: actions/setup-node@v7
         with:
-          node-version: '26.13.0'
+          node-version-file: source/.tool-versions
       - uses: pnpm/action-setup@v6
         with:
           package_json_file: source/package.json
@@ -138,7 +140,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: vertno/mihomo
-          ref: bed05b83259fa4e683cbf16ff62ff02248f5319e # release tools
+          ref: f0e5124e45bc5fcbbca4c1823854f0385d2b76fc # release tools
           path: tools
           persist-credentials: false
       - uses: actions/download-artifact@v4
@@ -175,7 +177,7 @@ jobs:
       - uses: actions/setup-node@v7
         if: steps.feed.outputs.repair == 'true'
         with:
-          node-version: '26.13.0'
+          node-version-file: source/.tool-versions
       - uses: pnpm/action-setup@v6
         if: steps.feed.outputs.repair == 'true'
         with:

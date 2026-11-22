@@ -1,5 +1,5 @@
 diff --git a/scripts/prebuild.mjs b/scripts/prebuild.mjs
-index 22dd960..d431013 100644
+index 22dd960..553a8c4 100644
 --- a/scripts/prebuild.mjs
 +++ b/scripts/prebuild.mjs
 @@ -10,6 +10,7 @@ import { glob } from 'glob'
@@ -29,15 +29,6 @@ index 22dd960..d431013 100644
  let META_VERSION
  
  const META_ALPHA_MAP = {
-@@ -466,7 +465,7 @@ async function resolveResource(binInfo) {
- // Windows NSIS plugin
- const resolvePlugin = async () => {
-   const url =
--    'https://nsis.sourceforge.io/mediawiki/images/e/ef/NSIS_Simple_Service_Plugin_Unicode_1.30.zip'
-+    'https://github.com/Speed7811/nsis-simple-service-plugin/releases/download/1.30/NSIS_Simple_Service_Plugin_1.30_Unicode.zip'
-   const tempDir = path.join(TEMP_DIR, 'SimpleSC')
-   const tempZip = path.join(
-     tempDir,
 diff --git a/src-tauri/src/feat/core_upgrade.rs b/src-tauri/src/feat/core_upgrade.rs
 index dfb415a..0a7e5be 100644
 --- a/src-tauri/src/feat/core_upgrade.rs

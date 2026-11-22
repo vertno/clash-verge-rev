@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: vertno/mihomo
-          ref: f0e5124e45bc5fcbbca4c1823854f0385d2b76fc # release tools
+          ref: b18ffe9cf171368b09778f55206b2f79aada761c # release tools
           path: tools
           persist-credentials: false
       - name: Verify release dependency and retry rules
@@ -105,10 +105,6 @@ jobs:
           projectPath: source
           tauriScript: pnpm
           args: --target ${{ matrix.target }}
-      - name: Upstream Rust tests for the native core updater
-        if: matrix.target == 'x86_64-pc-windows-msvc'
-        working-directory: source
-        run: cargo test --release --locked --target ${{ matrix.target }} -p clash-verge --lib core_upgrade::tests
       - name: Stage the signed installer
         shell: pwsh
         env:
@@ -126,8 +122,28 @@ jobs:
           name: windows-${{ matrix.target }}
           path: signed/*
           if-no-files-found: error
+  rust-tests:
+    needs: plan
+    if: needs.plan.outputs.tag != ''
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.source }}
+          path: source
+          persist-credentials: false
+      - name: Install the upstream Rust target
+        working-directory: source
+        run: rustup target add x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: source -> target
+          key: upstream-windows-tests
+      - name: Run the upstream Windows test suite
+        working-directory: source/src-tauri
+        run: cargo test --locked --all-features --target x86_64-pc-windows-msvc
   publish:
-    needs: [plan, build]
+    needs: [plan, build, rust-tests]
     if: needs.plan.outputs.tag != ''
     runs-on: ubuntu-latest
     permissions:
@@ -140,7 +156,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: vertno/mihomo
-          ref: f0e5124e45bc5fcbbca4c1823854f0385d2b76fc # release tools
+          ref: b18ffe9cf171368b09778f55206b2f79aada761c # release tools
           path: tools
           persist-credentials: false
       - uses: actions/download-artifact@v4
